@@ -1,0 +1,28 @@
+Programs and versions used 
+
+BUSCO        		5.7.0  		Gene prediction
+Dorodo			0.3.4		High accuracy rebasecalling
+Flye			2.9.1		De novo assembly
+GffToBed		1.0.3		Convert gff to bed
+Guppy			6.5.7		Initial Basecalling
+Kraken2			2.1.3		Contamination
+LASTZ			1.04.22		Alignment
+Medaka			1.9.1		Polishing
+Minimap2		2.14		Alignment
+MinKNOW			23.04.06	Nanopore sequencer software (Bream 7.5.10; Config 5.5.14; MinKNOW Core 5.5.5)
+MITOS2			2.1.3		Mitochondrial genome annotation
+Pod5			0.2.4		FAST5 to pod5 conversion
+QUAST			5.2.0		Assembly statistics
+Ragtag			2.1.0		Scaffolding
+RepeatMasker		4.1.5		Repetitive DNA identification
+SAMtools		1.3.1		SAM/BAM handling, coverage data
+SeqKit			2.5.1		FASTA handling
+Seqtk 			1.4		FASTA handling
+TOGA			1.1.5		Gene Annotation
+UCSC-fatotwobit		447		FASTA to 2bit 
+UCSC-genepredtobed	447		genePred to bed
+UCSC-gfftogenepred	447		GFF3 to genePred
+UCSC-gtftogenepred	447		GTF to genePred
+compleasm		0.2.5		annotation comparisions 
+
+ 
