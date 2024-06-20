@@ -90,6 +90,13 @@ ragtag.py scaffold \
 	$REF \
 	$RES
 ```
+### Evalutating genome completeness with BUSCO
+Representative scripts to evaluate completeness of generated assembly using vertebrate- and primate-specific lineage databases, respectively. 
+
+```shell
+busco -i $FASTA -m genome -l vertebrata_odb10 -c 24 -o $OUT_DIR -f --miniprot
+busco -i $FASTA -m genome -l primates_odb10 -c 24 -o $OUT_DIR -f --miniprot
+```
 
 ### Chaining to human genome for TOGA annotation
 
