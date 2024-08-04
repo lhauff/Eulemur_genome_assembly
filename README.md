@@ -27,11 +27,14 @@ cat *.fastq > eul_all.fq
 mv eul_all.fq eul_all.fastq
 gzip eul_all.fastq > eul_all.fastq.gz
 ```
-
 ## Nuclear Genome assembly 
+### Trim adapters with PoreChop (0.2.4)
+```shell
+porechop -i fastqs/eul_all.fastq.gz -o fastqs/eul_trimmed.fastq -t 24
+```
 ### Flye (2.9.1) assembly 
 ```shell
-flye --nano-hq fastqs/eul_all.fastq.gz \
+flye --nano-hq fastqs/eul_trimmed.fastq \
 	--out-dir results/flye \
 	--genome-size 3.0g \
 	--asm-coverage 40 \
@@ -50,10 +53,26 @@ medaka consensus results/medaka/calls_to_draft.bam results/medaka/contigs_batch$
 
 medaka stitch results/medaka/*.hdf polished_eul_assembly.fasta
 ```
-
-### Masking repetitive regions with RepeatMasker (4.1.5)
+### Remove haplotigs with Purge_Haplotigs (1.1.2)
+Map reads to assembly
 ```shell
-/cache/home/lrh85/RepeatMasker/RepeatMasker fasta/eulemur_rufifrons0.fa -pa 24 -species Primate -xsmall
+minimap2 -t 20 -ax map-ont $FA $FQ | samtools sort -m 1G -o $OUT/aligned.bam -T tmp.ali
+```
+Generate read coverage histogram and manually determine cutoffs for low, medium, and high coverage
+```shell
+purge_haplotigs hist -b $BAM  -g $FA -t 16
+```
+Analyze coverage by contigs using cutoffs determined above
+```shell
+purge_haplotigs cov -i aligned.bam.gencov -l 5 -m 35 -h 75 \
+	-o 75high/e_ruf_coverage_stats.csv \
+	-j 80 -s 80
+```
+Run purging pipeline
+```shell
+purge_haplotigs purge -g $FA -c 75high/e_ruf_coverage_stats.csv \
+	-t 16 \
+	-o 75high/e_ruf_curated
 ```
 
 ### Remove contamination with Kraken2 (2.1.3)
@@ -74,6 +93,16 @@ awk '(NR==FNR) { toRemove[$1]; next }
 	/^>/ { p=1; for(h in toRemove) if ( h ~ $0) p=0 }
 	p' contigs_to_remove.txt eulemur_rufifrons_all.fasta.masked > eulemur_rufirons_filtered_masked.fasta
 ```
+Removing contigs smaller than 3k with seqkit (2.5.1)
+```shell
+cat eulemur_rufirons_filtered_masked.fasta | seqkit seq -m 3000 > eulruf_trim_filt_purged_3krm.fasta
+```
+
+### Masking repetitive regions with RepeatMasker (4.1.5)
+```shell
+FA=eulruf_trim_filt_purged_3krm.fasta
+/cache/home/lrh85/RepeatMasker/RepeatMasker $FA -pa 54 -species Primate -xsmall
+```
 
 ### Scaffold genome to reference with RagTag (2.1.0)
 Scaffolding to _Lemur catta_ reference genome (mLemCat1.pri)
@@ -90,7 +119,31 @@ ragtag.py scaffold \
 	$REF \
 	$RES
 ```
-### Evalutating genome completeness with BUSCO
+
+### Additional assembly cleanup
+Removing contigs which erroneously mapped to Y chromosome and unpolished mitochondrial genome
+```shell
+awk '(NR==FNR) { toRemove[$1]; next }
+	/^>/ { p=1; for(h in toRemove) if ( h ~ $0) p=0 }
+	p' rm.txt ragtag.scaffold.fasta > eulruf_filtered_purge_rmy.fasta
+```
+Adding polished mitochondrial genome produced with Flye meta mode (see below)
+```shell
+cat eulruf_filtered_purge_rmy.fasta polished_eulruf_mito_assembly.fasta > eulemur_rufifrons.fasta
+```
+
+### Evaulating genome completeness with QUAST (5.2.0)
+Representative scripts to evaluate completeness of generated assembly by comparing to reference genome
+```shell
+quast $FA  \
+	-r ref_genomes/lemur_catta/ncbi_dataset/data/RefSeq/GCF_020740605.2_mLemCat1.pri_genomic.fa \
+        -g ref_genomes/lemur_catta/ncbi_dataset/data/RefSeq/genomic.gff \
+        --nanopore fastqs/eul_trimmed.fasta \
+        -o results/results/quast/eul_filt_purge_3krm_masked_scaff \
+        --large --no-snps
+```
+
+### Evalutating genome completeness with BUSCO (5.7.0)
 Representative scripts to evaluate completeness of generated assembly using vertebrate- and primate-specific lineage databases, respectively. 
 
 ```shell
@@ -98,9 +151,10 @@ busco -i $FASTA -m genome -l vertebrata_odb10 -c 24 -o $OUT_DIR -f --miniprot
 busco -i $FASTA -m genome -l primates_odb10 -c 24 -o $OUT_DIR -f --miniprot
 ```
 
-### Chaining to human genome for TOGA annotation
+### Chaining to human genome for TOGA (1.1.5) annotation
 
-First convert target GTF to bed-12
+```
+Convert ref and target genome to 2bit
 ```shell
 faToTwoBit genome.fa genome.2bit
 ```
@@ -124,6 +178,11 @@ $RPATH/rename_chromosomes_back.py --rename_table_query eul_rufifrons_chrom_renam
 ```
 
 ### Annotating with TOGA (1.1.5)
+Convert target GTF to bed-12
+```shell
+gtfToGenePred ref_genomes/human/hg38.ncbiRefSeq.gtf ref_genomes/human/temp.genePred
+genePredToBed ref_genomes/human/temp.genePred ref_genomes/human/hg38.bed
+```
 Annotating against set of human genes from <https://github.com/hillerlab/TOGA/tree/master/supply>
 ```shell
 TOGA_PATH=/home/lrh85/TOGA
