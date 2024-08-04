@@ -12,8 +12,8 @@ Minimap2		2.14		Alignment
 MinKNOW			23.04.06	Nanopore sequencer software (Bream 7.5.10; Config 5.5.14; MinKNOW Core 5.5.5)
 MITOS2			2.1.3		Mitochondrial genome annotation
 Pod5			0.2.4		FAST5 to pod5 conversion
-Porechop 0.2.4 Trim adaptors
-Purge Haplotigs 1.1.2 Remove allelic contigs
+Porechop   0.2.4   Trim adaptors
+Purge Haplotigs   1.1.2   Remove allelic contigs
 QUAST			5.2.0		Assembly statistics
 Ragtag			2.1.0		Scaffolding
 RepeatMasker		4.1.5		Repetitive DNA identification
